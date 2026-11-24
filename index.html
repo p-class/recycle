@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 분리수거 도우미</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2EADF; --card:#FFFEF8; --line:#E6DCC8; --ink:#2B2B2B; --sub:#6B6257; --muted:#A39A8C;
+  --blue:#2F7FD8; --or:#8E6AD8; --red:#E05A5A; --teal:#2BA9C4; --orange:#F2994A; --green:#3E9E6A;
+  --can:#5B7DB1; --pet:#3B8FD9; --plastic:#D9A21B; --gray:#8C8579;
+  --screen:#1E2638; --screen2:#283249;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:16px;line-height:1.45}
+button{font-family:inherit;cursor:pointer}
+.wrap{max-width:1200px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:4px 0 14px}
+header h1{margin:0;font-size:26px;font-weight:900;letter-spacing:-.5px}
+header h1 b{color:var(--blue)}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.steps span{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:700;color:var(--sub)}
+.steps span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:1.12fr .88fr;gap:18px;align-items:start}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 3px 0 rgba(120,100,70,.12)}
+.card+.card{margin-top:14px}
+.h{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:18px;font-weight:900;flex-wrap:wrap}
+.h small{font-size:14px;color:var(--sub);font-weight:700}
+.num{width:28px;height:28px;border-radius:50%;display:inline-grid;place-items:center;color:#fff;font-size:15px;font-weight:900;flex:none}
+.hint{font-size:14px;color:var(--sub);margin:0 0 8px}
+/* 사진 고르기 */
+.thumbs{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.thumb{position:relative;border:2px solid var(--line);background:#fff;border-radius:12px;padding:4px 4px 6px;text-align:center}
+.thumb img{width:100%;aspect-ratio:1/1;object-fit:contain;border-radius:8px;display:block;background:#F6F2EA}
+.thumb .n{font-size:12px;font-weight:700;margin-top:4px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thumb.sel{border-color:var(--ink);box-shadow:0 0 0 3px rgba(43,43,43,.12)}
+.thumb .badge{position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;display:none;place-items:center;color:#fff;font-weight:900;font-size:14px}
+.thumb .badge.ok{display:grid;background:var(--green)} .thumb .badge.no{display:grid;background:var(--red)}
+.score{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.score span{font-size:13px;font-weight:700;background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+.score span.full{background:var(--green);color:#fff;border-color:var(--green)}
+/* 선택한 사진 */
+.photo{display:grid;grid-template-columns:190px 1fr;gap:14px;align-items:center}
+.photo img{width:100%;aspect-ratio:1/1;object-fit:contain;background:#F6F2EA;border:1px solid var(--line);border-radius:12px}
+.photo .nm{font-size:20px;font-weight:900;margin-bottom:8px}
+.cur{font-size:15px;color:var(--sub);font-weight:700}
+.h .more{margin-left:auto}
+dialog#detail{border:0;border-radius:20px;padding:0;max-width:min(440px,92vw);width:100%;background:var(--card);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog#detail::backdrop{background:rgba(30,38,56,.55)}
+.dlg{padding:18px;position:relative;display:flex;flex-direction:column;gap:8px}
+.dlg img{width:100%;aspect-ratio:1/1;object-fit:contain;background:#F6F2EA;border:1px solid var(--line);border-radius:14px}
+.dlg .dname{font-size:20px;font-weight:900}
+.dlg .lab{font-size:13px;color:var(--sub);font-weight:700}
+.dlg #facts{display:flex;flex-direction:column;gap:6px}
+.dlg .x{position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;border:0;background:var(--ink);color:#fff;font-size:16px;font-weight:900}
+.more{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:8px 12px;font-weight:700;font-size:14.5px;color:var(--sub)}
+.more.on{background:#FBF7EE;color:var(--ink)}
+.people .lab{font-size:13px;color:var(--sub);font-weight:700}
+.fact{display:flex;align-items:center;justify-content:space-between;background:#FBF7EE;border:1px solid var(--line);border-radius:10px;padding:7px 12px;font-weight:700}
+.tf{font-weight:900;border-radius:999px;padding:1px 10px;font-size:14px;color:#fff}
+.tf.t{background:var(--green)} .tf.f{background:var(--red)}
+/* 예상 */
+.q{font-weight:900;font-size:15px;margin:4px 0 6px}
+.q+.bins{margin-bottom:12px}
+.bins{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.bin{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:8px 6px;font-weight:700;font-size:14.5px;color:var(--ink)}
+.bin.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.bin.on.binai{background:var(--screen);border-color:var(--screen)}
+.go{display:block;width:100%;margin-top:4px;border:0;border-radius:12px;padding:13px;font-size:17px;font-weight:900;background:var(--teal);color:#fff}
+.go:disabled{background:#CFC6B6;cursor:not-allowed}
+/* 규칙 */
+.sentence{background:#F3F1EA;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:17px;font-weight:700;margin-bottom:10px}
+.sentence .and{color:var(--blue);font-weight:900}.sentence .or{color:var(--or);font-weight:900}.sentence .not{color:var(--red);font-weight:900}
+.rule{background:var(--teal);border-radius:14px;padding:12px;color:#fff;font-weight:900}
+.rline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rline+.rline{margin-top:8px}
+.w{font-size:16px}
+.w.lead{width:92px;text-align:right}
+.hex{background:#fff;color:var(--ink);font-weight:700;padding:7px 18px;clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,10px 100%,0 50%);font-size:15px;white-space:nowrap}
+.inner{display:flex;align-items:center;gap:6px;padding:6px 14px;clip-path:polygon(12px 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,12px 100%,0 50%);flex-wrap:wrap}
+.inner.and{background:var(--blue)} .inner.or{background:var(--or)}
+.seg{display:inline-flex;background:rgba(255,255,255,.22);border-radius:999px;padding:3px}
+.seg button{border:0;background:transparent;color:#fff;font-weight:900;font-size:14px;padding:5px 11px;border-radius:999px}
+.seg button.on{background:#fff;color:var(--ink)}
+.notwrap{display:flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:10px}
+.notwrap.on{background:var(--red)}
+.notbtn{border:1.5px dashed rgba(255,255,255,.85);background:transparent;color:#fff;font-weight:900;font-size:13px;padding:4px 9px;border-radius:8px}
+.notwrap.on .notbtn{border-style:solid;background:#fff;color:var(--red)}
+.branch{border-radius:12px;padding:4px 6px;transition:opacity .2s}
+.branch.off{opacity:.35}
+.branch.on{background:rgba(255,255,255,.18);outline:2px solid rgba(255,255,255,.85)}
+.now{background:#fff;color:var(--ink);border-radius:999px;padding:3px 10px;font-size:13.5px;font-weight:900}
+.res{border-radius:10px;padding:6px 14px;font-size:15px;color:#fff;white-space:nowrap}
+.eval{margin-top:10px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-weight:700;color:var(--sub);font-size:15px}
+.eval b.t{color:var(--green)} .eval b.f{color:var(--red)} .eval b.and{color:var(--blue)} .eval b.or{color:var(--or)} .eval b.not{color:var(--red)}
+.ruleok{margin-top:10px;border-radius:10px;padding:9px 12px;font-weight:900}
+.ruleok.ok{background:#E7F5EC;color:var(--green)} .ruleok.no{background:#FDEDEB;color:var(--red)}
+.waiting{border:2px dashed var(--line);border-radius:14px;padding:22px;text-align:center;color:var(--muted);font-weight:700}
+/* AI 창 */
+.ai{background:var(--screen);border-radius:18px;overflow:hidden;color:#E9EEF8;box-shadow:0 3px 0 rgba(0,0,0,.18)}
+.ai .bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--screen2);font-weight:900}
+.dots{display:flex;gap:5px}.dots i{width:10px;height:10px;border-radius:50%;background:#E05A5A;display:block}.dots i:nth-child(2){background:#F2C14A}.dots i:nth-child(3){background:#4CC38A}
+.mode{margin-left:auto;font-size:12.5px;font-weight:700;border-radius:999px;padding:3px 10px;background:#3A4560;color:#CFE0FF}
+.mode.ok{background:#1F6E4E;color:#DFF7EC} .mode.fix{background:#6E5A1F;color:#FFF3D1}
+.ai .body{padding:16px}
+.aiimg{position:relative;width:100%;aspect-ratio:4/3;background:#F6F2EA;border-radius:12px;overflow:hidden;display:grid;place-items:center}
+.aiimg img{width:100%;height:100%;object-fit:contain}
+.aiimg .empty{color:#8A95AE;font-weight:700;text-align:center;padding:10px}
+.scan{position:absolute;left:0;right:0;height:22%;background:linear-gradient(rgba(43,169,196,0),rgba(43,169,196,.45),rgba(43,169,196,0));top:-25%;display:none}
+.aiimg.busy .scan{display:block;animation:scan 1.1s linear infinite}
+@keyframes scan{to{top:105%}}
+.aires{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-top:14px}
+.saw{font-size:14px;color:#AFC0DD;font-weight:700}
+.saw b{display:block;font-size:28px;color:#fff;font-weight:900;margin-top:2px}
+.aibin{text-align:right;font-size:14px;color:#AFC0DD;font-weight:700}
+.aibin b{display:inline-block;margin-top:4px;font-size:18px;color:#fff;border-radius:10px;padding:5px 12px}
+.bars{margin-top:12px;display:flex;flex-direction:column;gap:7px}
+.brow{display:grid;grid-template-columns:78px 1fr 48px;gap:8px;align-items:center;font-size:14px;font-weight:700}
+.btrack{height:12px;background:#34405B;border-radius:6px;overflow:hidden}
+.btrack i{display:block;height:100%;width:0;border-radius:6px;transition:width .7s}
+.brow .p{text-align:right;color:#CFE0FF}
+.ainote{margin-top:12px;font-size:13.5px;color:#93A3C2}
+/* 비교·검증 */
+.final{margin-top:14px;background:var(--card);color:var(--ink);border-radius:16px;padding:16px;border:1.5px solid var(--line)}
+.trust{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 10px}
+.trust button{border:2px solid var(--line);background:#fff;border-radius:12px;padding:11px;font-weight:900;font-size:16px}
+.trust button.on.y{background:var(--green);border-color:var(--green);color:#fff}
+.trust button.on.n{background:var(--red);border-color:var(--red);color:#fff}
+.cmp{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:15px;margin-top:6px}
+.cmp span{color:var(--sub);font-weight:700}
+.cmp b{font-weight:900}
+.answer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 10px;background:#EEF7F1;border:2.5px solid var(--green);border-radius:14px;padding:12px 16px;margin:4px 0 10px}
+.answer span{font-weight:900;color:var(--green);font-size:16px}
+.answer b{font-size:24px;font-weight:900;word-break:keep-all}
+.oxlist{display:flex;flex-direction:column;gap:6px}
+.oxrow{display:grid;grid-template-columns:auto 1fr 32px;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:15px}
+.oxrow span{color:var(--sub);font-weight:700;white-space:nowrap}
+.oxrow b{font-weight:900;word-break:keep-all;text-align:right}
+.ox{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;color:#fff;font-weight:900;font-size:16px;font-family:"Arial Rounded MT Bold",Arial,sans-serif}
+.ox.o{background:var(--green)} .ox.x{background:var(--red)}
+.verdict{margin-top:12px;border-radius:12px;padding:10px 12px;font-weight:900}
+.verdict.ok{background:#E7F5EC;color:var(--green)} .verdict.no{background:#FDEDEB;color:var(--red)} .verdict.info{background:#EEF4FC;color:var(--blue)}
+.after{margin-top:6px;font-size:14px;color:var(--sub);font-weight:500}
+footer{margin:18px 0 8px;font-size:12px;color:var(--muted);text-align:center}
+footer button{border:0;background:none;color:var(--muted);text-decoration:underline;font-size:12px}
+@media (max-width:1024px){
+  .grid{display:flex;flex-direction:column;gap:14px;align-items:stretch}
+  .col{display:contents}
+  .card+.card,.final{margin-top:0}
+  .o0{order:0}.o1{order:1}.o2{order:2}.o3{order:3}.o4{order:4}
+  .steps{margin-left:0}
+}
+@media (max-width:560px){
+  .thumbs{grid-template-columns:repeat(3,1fr)}
+  .photo{grid-template-columns:120px 1fr}
+  .bins{grid-template-columns:repeat(2,1fr)}
+  header h1{font-size:22px}
+  .w.lead{width:auto}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>♻️ <b>AI</b> 분리수거 도우미</h1>
+    <div class="steps"><span id="st1">① 예상</span><span id="st2">② 실행</span><span id="st3">③ 비교</span><span id="st4">④ 고치기</span></div>
+  </header>
+
+  <div class="grid">
+    <!-- ===== 좌측: 학생 파트 (휴대폰에서는 order 순서대로 한 줄) ===== -->
+    <div class="col">
+      <section class="card o0">
+        <div class="h"><span class="num" style="background:var(--ink)">📷</span>사진 고르기</div>
+        <div class="thumbs" id="thumbs"></div>
+      </section>
+
+
+      <section class="card o1">
+        <div class="h"><span class="num" style="background:var(--orange)">1</span>예상해 봐요 <span id="curName" class="cur"></span>
+          <button class="more" id="moreBtn">🔍 사진·조건 자세히 보기</button></div>
+        <div class="q">🤖 AI는 이 쓰레기를 어디로 분류할까?</div>
+        <div class="bins" id="binsAI"></div>
+        <div class="q">🙋 내 생각에는 어디로 버려야 할까?</div>
+        <div class="bins" id="binsMe"></div>
+        <button class="go" id="go">② AI에게 보여 주기 🤖</button>
+      </section>
+
+      <section class="card o4" id="ruleCard">
+        <div class="h"><span class="num" style="background:var(--or)">4</span>조건문으로 고치기 <small>· 연산자를 바꾸면 결과가 바로 바뀌어요</small></div>
+        <div id="ruleArea"></div>
+      </section>
+
+    </div>
+
+    <!-- ===== 우측: AI 창 ===== -->
+    <div class="col">
+      <section class="ai o2">
+        <div class="bar"><span class="num" style="background:var(--teal);width:26px;height:26px;font-size:14px">2</span>🤖 AI 창<span class="dots" style="margin-left:6px"><i></i><i></i><i></i></span><span class="mode" id="mode">AI 준비 중…</span></div>
+        <div class="body">
+          <div class="aiimg" id="aiimg"><div class="empty" id="aiempty">왼쪽에서 사진을 고르고 예상한 뒤<br>'AI에게 보여 주기'를 눌러요</div><img id="aiphoto" alt="" style="display:none"><div class="scan"></div></div>
+          <div id="aiout" style="display:none">
+            <div class="aires">
+              <div class="saw">AI가 본 재질<b id="aicls"></b></div>
+              <div class="aibin">AI의 분류<br><b id="aibin"></b></div>
+            </div>
+            <div class="bars" id="bars"></div>
+            <div class="ainote">AI는 사진을 보고 <b>재질</b>을 알아봐요. 오염·찌그러짐·라벨은 따로 배우지 않았어요.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="final o3">
+        <div class="h"><span class="num" style="background:var(--green)">3</span>결과를 비교해요</div>
+        <div id="finalBody"><div class="waiting">AI가 분류하면<br>결과를 비교할 수 있어요</div></div>
+      </section>
+    </div>
+  </div>
+
+  <dialog id="detail">
+    <div class="dlg">
+      <button class="x" id="closeDetail" aria-label="닫기">✕</button>
+      <img id="dimg" alt="">
+      <div class="dname" id="dname"></div>
+      <div class="lab">👀 사람이 본 것</div>
+      <div id="facts"></div>
+      <p class="hint" style="margin:10px 0 0">AI는 재질만 알아봐요. 오염·찌그러짐·라벨은 사람이 보고 판단해요.</p>
+    </div>
+  </dialog>
+
+  <footer>
+    그림: 소스 묻은 피자 상자·캔·물병은 GPT로 만든 그림 · 신문지는 Claude가 만든 그림 · AI: 선생님이 티처블 머신으로 만든 모델<br>
+    <button id="reset">처음부터 다시</button> · <button id="toggleMode">⚙ 선생님용: 비상 모드(예비 결과)</button>
+  </footer>
+</div>
+
+<script>
+/* ================== 설정 (여기만 바꾸면 돼요) ================== */
+// 선생님 모델: https://teachablemachine.withgoogle.com/models/ahXtZ2g6u/
+// (같은 모델을 저장소 주소로 바로 불러와요. 티처블에서 '클라우드 모델 업데이트'를 하면 MODEL_VER 날짜만 바꿔 주세요)
+const MODEL_URL = "https://storage.googleapis.com/tm-model/ahXtZ2g6u/";
+const MODEL_VER = "?v=20261124";
+
+// 조건문의 처음 연산자 (op: "그리고" 또는 "또는", not: 두 번째 조건에 '아니다')
+const START = {
+  "종이":     {op:"그리고", not:false},   // 맞는 답: 그리고
+  "캔":       {op:"그리고", not:false},   // 맞는 답: 또는   → 멀쩡한 캔이 틀리게 나옴
+  "투명 페트": {op:"그리고", not:false},   // 맞는 답: 그리고 + 아니다 → 두 물병이 틀리게 나옴
+  "플라스틱": {op:"그리고", not:false}
+};
+
+// AI가 재질만 보고 정하는 분류
+const AI_BIN = {"종이":"종이류", "캔":"캔류", "투명 페트":"투명 페트", "플라스틱":"플라스틱"};
+
+// 재질별 조건문: 만일 <AI: 재질> (연산자) <조건> (이)라면 → then, 아니면 → else
+const RULES = {
+  "종이":     {cond:"오염되었다",  key:"dirty",   then:"일반쓰레기", else:"종이류"},
+  "캔":       {cond:"찌그러졌다",  key:"crushed", then:"캔류",       else:"분류 보류"},
+  "투명 페트": {cond:"라벨이 있다", key:"label",   then:"투명 페트",  else:"라벨 떼고 버리기"},
+  "플라스틱": {cond:"오염되었다",  key:"dirty",   then:"일반쓰레기", else:"플라스틱"}
+};
+
+// 사진 6장 = 연산자 3쌍 (fixed = AI 연결이 안 될 때 쓰는 예비 결과)
+const ITEMS = [
+  {id:"pizza",  name:"소스 묻은 피자 상자", img:"images/pizza.jpg",        facts:{dirty:true,  crushed:false, label:false}, truth:"일반쓰레기",
+   fixed:{"종이":100,"플라스틱":0,"캔":0,"투명 페트":0}, why:"AI는 종이를 정확히 알아봤지만, 소스가 묻은 건 놓쳤어요."},
+  {id:"paper",  name:"깨끗한 신문지",       img:"images/paper.jpg",        facts:{dirty:false, crushed:false, label:false}, truth:"종이류",
+   fixed:{"종이":99,"플라스틱":0,"캔":1,"투명 페트":0},  why:"깨끗한 종이는 종이류!"},
+  {id:"canC",   name:"찌그러진 캔",         img:"images/can_crushed.jpg",  facts:{dirty:false, crushed:true,  label:false}, truth:"캔류",
+   fixed:{"종이":0,"플라스틱":0,"캔":100,"투명 페트":0}, why:"찌그러져도 캔은 캔류!"},
+  {id:"can",    name:"멀쩡한 캔",           img:"images/can.jpg",          facts:{dirty:false, crushed:false, label:false}, truth:"캔류",
+   fixed:{"종이":0,"플라스틱":1,"캔":99,"투명 페트":0},  why:"멀쩡한 캔도 캔이에요. 재질대로 캔류!"},
+  {id:"bottle", name:"라벨 없는 물병",      img:"images/bottle.jpg",       facts:{dirty:false, crushed:false, label:false}, truth:"투명 페트",
+   fixed:{"종이":0,"플라스틱":0,"캔":0,"투명 페트":100}, why:"라벨이 없는 투명 페트병은 투명 페트로!"},
+  {id:"bottleL",name:"라벨 붙은 물병",      img:"images/bottle_label.jpg", facts:{dirty:false, crushed:false, label:true},  truth:"라벨 떼고 버리기",
+   fixed:{"종이":0,"플라스틱":0,"캔":0,"투명 페트":100}, why:"AI는 투명 페트를 정확히 알아봤지만, 라벨이 붙은 건 놓쳤어요."}
+];
+
+// 조건문 결과가 틀렸을 때 보여 줄 힌트 (정답 연산자는 말하지 않음)
+const HINT = {
+  pizza:  "소스가 묻었는데 일반쓰레기가 아니라고요? 조건을 다시 봐요.",
+  paper:  "깨끗한 종이인데 종이류가 아니라고요? 조건을 다시 봐요.",
+  canC:   "찌그러진 캔인데 캔류가 아니라고요? 조건을 다시 봐요.",
+  can:    "캔인데 이 규칙을 통과하지 못했어요. 찌그러져야만 캔류일까요?",
+  bottle: "라벨이 없는데 라벨을 떼라고요? 조건이 거꾸로 된 것 같아요.",
+  bottleL:"라벨이 붙어 있는데 그대로 투명 페트에? 조건이 거꾸로 된 것 같아요."
+};
+const BINS = ["종이류","캔류","투명 페트","플라스틱","일반쓰레기","라벨 떼고 버리기"];
+const CLASSES = ["종이","캔","투명 페트","플라스틱"];
+const COLOR = {"종이":"var(--green)","캔":"var(--can)","투명 페트":"var(--pet)","플라스틱":"var(--plastic)",
+               "종이류":"var(--green)","캔류":"var(--can)","일반쓰레기":"var(--orange)","라벨 떼고 버리기":"var(--gray)","분류 보류":"#B7AE9F"};
+const FACT_LABEL = {dirty:"오염되었다", crushed:"찌그러졌다", label:"라벨이 있다"};
+
+/* ================== 상태 ================== */
+const clone = o => JSON.parse(JSON.stringify(o));
+let ops = clone(START);
+let sel = 0;
+const fresh = () => ({predAI:null, predMe:null, ai:null, trust:null});
+const st = {}; ITEMS.forEach(it => st[it.id] = fresh());
+const params = new URLSearchParams(location.search);
+let mode = params.get("mode") === "fixed" ? "fixed" : "auto";
+let model = null, modelState = "none";
+const $ = id => document.getElementById(id);
+
+/* ================== AI ================== */
+const LIBS = ["https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js",
+              "https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js"];
+function loadScript(src){ return new Promise((ok,no)=>{ const s=document.createElement("script"); s.src=src; s.onload=ok; s.onerror=()=>no(new Error("lib")); document.head.appendChild(s); }); }
+function timeout(p, ms){ return Promise.race([p, new Promise((_,no)=>setTimeout(()=>no(new Error("timeout")),ms))]); }
+async function ensureModel(){
+  if (mode === "fixed") return null;
+  if (modelState === "ready") return model;
+  if (modelState === "fail") return null;
+  if (modelState === "loading"){ while (modelState === "loading") await new Promise(r=>setTimeout(r,200)); return model; }
+  modelState = "loading"; badge();
+  try{
+    if (!window.tmImage) for (const s of LIBS) await loadScript(s);
+    model = await timeout(tmImage.load(MODEL_URL+"model.json"+MODEL_VER, MODEL_URL+"metadata.json"+MODEL_VER), 20000);
+    modelState = "ready";
+  }catch(e){ model = null; modelState = "fail"; }
+  badge(); return model;
+}
+function normClass(n){ n = String(n).replace(/\s/g,""); if (n.includes("페트")) return "투명 페트"; if (n.includes("플라")) return "플라스틱"; if (n.includes("종이")) return "종이"; if (n.includes("캔")) return "캔"; return n; }
+function toCanvas(src){ return new Promise((ok,no)=>{ const im=new Image(); im.onload=()=>{ const c=document.createElement("canvas"); c.width=c.height=224;
+  const s=Math.min(im.naturalWidth,im.naturalHeight); c.getContext("2d").drawImage(im,(im.naturalWidth-s)/2,(im.naturalHeight-s)/2,s,s,0,0,224,224); ok(c); }; im.onerror=no; im.src=src; }); }
+async function runAI(it){
+  const m = await ensureModel();
+  if (m){
+    try{
+      const pr = await m.predict(await toCanvas(it.img)); const probs = {};
+      pr.forEach(p => probs[normClass(p.className)] = Math.round(p.probability*100));
+      return {probs, src:"ai"};
+    }catch(e){ modelState = "fail"; badge(); }
+  }
+  return {probs: clone(it.fixed), src:"fixed"};
+}
+const topClass = probs => CLASSES.slice().sort((a,b)=>(probs[b]||0)-(probs[a]||0))[0];
+function badge(){
+  const b = $("mode");
+  if (mode === "fixed"){ b.className = "mode fix"; b.textContent = "예비 결과"; }
+  else if (modelState === "ready"){ b.className = "mode ok"; b.textContent = "진짜 AI 연결됨"; }
+  else if (modelState === "loading"){ b.className = "mode"; b.textContent = "AI 불러오는 중…"; }
+  else if (modelState === "fail"){ b.className = "mode fix"; b.textContent = "예비 결과 (AI 연결 안 됨)"; }
+  else { b.className = "mode"; b.textContent = "AI 준비 중…"; }
+  $("toggleMode").textContent = mode === "fixed" ? "⚙ 선생님용: 진짜 AI로 돌아가기" : "⚙ 선생님용: 비상 모드(예비 결과)";
+}
+
+/* ================== 계산 ================== */
+function aiBinOf(s){ return s.ai ? AI_BIN[topClass(s.ai.probs)] : null; }
+function evaluate(it, s){
+  if (!s.ai) return null;
+  const cls = topClass(s.ai.probs), R = RULES[cls], o = ops[cls];
+  const a = true, raw = !!it.facts[R.key], b = o.not ? !raw : raw;
+  const val = o.op === "그리고" ? (a && b) : (a || b);
+  return {cls, R, o, a, raw, b, val, result: val ? R.then : R.else};
+}
+const tfv = v => `<b class="${v?"t":"f"}">${v?"참":"거짓"}</b>`;
+
+/* ================== 화면 ================== */
+function renderThumbs(){
+  let okRule = 0, okAI = 0, seen = 0;
+  $("thumbs").innerHTML = ITEMS.map((it,i)=>{
+    const s = st[it.id], e = evaluate(it, s); const mark = e ? (e.result === it.truth ? "ok" : "no") : "";
+    if (mark === "ok") okRule++;
+    if (s.ai){ seen++; if (aiBinOf(s) === it.truth) okAI++; }
+    return `<button class="thumb ${i===sel?"sel":""}" data-i="${i}"><span class="badge ${mark}">${mark==="ok"?"✓":mark==="no"?"✗":""}</span>
+      <img src="${it.img}" alt="${it.name}"><div class="n">${i+1}. ${it.name}</div></button>`;
+  }).join("");
+  $("thumbs").querySelectorAll(".thumb").forEach(b => b.onclick = () => { sel = +b.dataset.i; renderAll(); });
+}
+function renderPhoto(){
+  const it = ITEMS[sel];
+  $("curName").textContent = `· ${sel+1}. ${it.name}`;
+  $("dimg").src = it.img; $("dimg").alt = it.name; $("dname").textContent = `${sel+1}. ${it.name}`;
+  $("facts").innerHTML = Object.keys(FACT_LABEL).map(k =>
+    `<div class="fact">${FACT_LABEL[k]} <span class="tf ${it.facts[k]?"t":"f"}">${it.facts[k]?"참":"거짓"}</span></div>`).join("");
+}
+function renderPredict(){
+  const s = st[ITEMS[sel].id];
+  const draw = (id, key, extra, list) => {
+    $(id).innerHTML = list.map(b=>`<button class="bin ${extra} ${s[key]===b?"on":""}" data-b="${b}">${b}</button>`).join("");
+    $(id).querySelectorAll(".bin").forEach(x => x.onclick = () => { s[key] = x.dataset.b; renderAll(); });
+  };
+  draw("binsAI", "predAI", "binai", BINS); draw("binsMe", "predMe", "", BINS);
+  const go = $("go"); go.disabled = !(s.predAI && s.predMe);
+  go.textContent = !(s.predAI && s.predMe) ? "먼저 두 가지를 예상해 주세요" : (s.ai ? "② AI에게 다시 보여 주기 🤖" : "② AI에게 보여 주기 🤖");
+}
+function renderAI(){
+  const it = ITEMS[sel], s = st[it.id];
+  if (!s.ai){ $("aiphoto").style.display = "none"; $("aiempty").style.display = ""; $("aiout").style.display = "none"; return; }
+  $("aiphoto").src = it.img; $("aiphoto").style.display = ""; $("aiempty").style.display = "none"; $("aiout").style.display = "";
+  const cls = topClass(s.ai.probs), bin = AI_BIN[cls];
+  $("aicls").textContent = `${cls} ${s.ai.probs[cls]}%`;
+  const ab = $("aibin"); ab.textContent = bin; ab.style.background = COLOR[bin] || "var(--gray)";
+  const order = CLASSES.slice().sort((a,b)=>(s.ai.probs[b]||0)-(s.ai.probs[a]||0));
+  $("bars").innerHTML = order.map(k=>`<div class="brow"><span>${k}</span><span class="btrack"><i style="background:${COLOR[k]}" data-w="${s.ai.probs[k]||0}"></i></span><span class="p">${s.ai.probs[k]||0}%</span></div>`).join("");
+  requestAnimationFrame(()=> $("bars").querySelectorAll("i").forEach(i => i.style.width = i.dataset.w + "%"));
+}
+function renderFinal(){
+  const it = ITEMS[sel], s = st[it.id];
+  if (!s.ai){ $("finalBody").innerHTML = `<div class="waiting">AI가 분류하면<br>결과를 비교할 수 있어요</div>`; return; }
+  const bin = aiBinOf(s), aiRight = bin === it.truth;
+  const ox = ok => `<span class="ox ${ok?"o":"x"}">${ok?"O":"X"}</span>`;
+  let html = s.trust === null ? `<button class="go" id="showResult" style="background:var(--green)">🔎 결과 보기</button>` : "";
+  if (s.trust !== null){
+    html += `<div class="answer"><span>✅ 올바른 분리배출</span><b style="color:${COLOR[it.truth]||"var(--gray)"}">${it.truth}</b></div>
+      <div class="oxlist">
+        <div class="oxrow"><span>🤖 AI의 답</span><b>${bin}</b>${ox(aiRight)}</div>
+        <div class="oxrow"><span>🔮 내가 예상한 AI의 답</span><b>${s.predAI}</b>${ox(s.predAI===bin)}</div>
+        <div class="oxrow"><span>🙋 내 답</span><b>${s.predMe}</b>${ox(s.predMe===it.truth)}</div>
+      </div>
+      <div class="verdict ${aiRight?"ok":"no"}">${aiRight ? "AI가 맞았어요! 👍" : "AI도 틀릴 수 있어요. 재질은 알아보지만 재활용 기준은 몰라요. 마지막 판단은 사람이!"}</div>
+      <div class="after">${it.why}</div>
+      <button class="go" id="goRule" style="margin-top:12px;background:var(--or)">${aiRight ? "④ 조건문 고치기에서 규칙도 확인해 봐요" : "④ 조건문 고치기에서 바로잡아 봐요"}</button>`;
+  }
+  $("finalBody").innerHTML = html;
+  const sr = $("showResult"); if (sr) sr.onclick = () => { s.trust = true; renderAll(); };
+  const gr = $("goRule"); if (gr) gr.onclick = () => $("ruleCard").scrollIntoView({behavior:"smooth", block:"start"});
+}
+function renderRule(){
+  const it = ITEMS[sel], s = st[it.id], e = evaluate(it, s);
+  if (!e || s.trust === null){ $("ruleArea").innerHTML = `<div class="waiting">③ 결과를 보면<br>조건문이 여기 나타나요</div>`; return; }
+  const {cls, R, o} = e, c = o.op === "그리고" ? "and" : "or";
+  $("ruleArea").innerHTML = `
+    <div class="q">어떤 규칙을 적용할까요?</div>
+    <div class="sentence">AI가 <b>${cls}</b>(이)라고 했고, <span class="${c}">${o.op}</span> ${R.cond}${o.not ? ` <span class="not">아니다</span>` : ""} → <b>${R.then}</b></div>
+    <div class="rule">
+      <div class="rline"><span class="w">만일</span>
+        <span class="inner ${c}">
+          <span class="hex">AI: ${cls}</span>
+          <span class="seg"><button data-op="그리고" class="${o.op==="그리고"?"on":""}">그리고</button><button data-op="또는" class="${o.op==="또는"?"on":""}">또는</button></span>
+          <span class="notwrap ${o.not?"on":""}"><span class="hex">${R.cond}</span><button class="notbtn" id="notbtn">${o.not?"아니다 ✓":"+ 아니다"}</button></span>
+        </span>
+      </div>
+      <div class="rline branch ${e.val?"on":"off"}"><span class="w lead">(이)라면 →</span><span class="res" style="background:${COLOR[R.then]||"var(--gray)"}">${R.then}</span>${e.val?'<span class="now">◀ 지금 결과 (참)</span>':""}</div>
+      <div class="rline branch ${e.val?"off":"on"}"><span class="w lead">아니면 →</span><span class="res" style="background:${COLOR[R.else]||"var(--gray)"}">${R.else}</span>${e.val?"":'<span class="now">◀ 지금 결과 (거짓)</span>'}</div>
+    </div>
+    <div class="eval">${it.name}: ${tfv(e.a)} <b class="${c}">${o.op}</b> ${o.not ? `(${tfv(e.raw)} <b class="not">아니다</b> = ${tfv(e.b)})` : tfv(e.b)} = ${tfv(e.val)} → <b style="color:var(--ink)">${e.result}</b></div>
+    <div class="ruleok ${e.result===it.truth?"ok":"no"}">${e.result===it.truth ? "✓ 조건문 결과가 올바른 분리배출과 같아요!" : `✗ ${HINT[it.id]}`}</div>
+    <p class="hint" style="margin:8px 0 0">이 조건문은 AI가 '${cls}'(으)로 확인한 사진 ${ITEMS.filter(x=>topClass(st[x.id].ai ? st[x.id].ai.probs : x.fixed)===cls).map(x=>x.name).join(", ")}에 함께 적용돼요.</p>`;
+  $("ruleArea").querySelectorAll(".seg button").forEach(b => b.onclick = () => { ops[cls].op = b.dataset.op; renderAll(); });
+  $("notbtn").onclick = () => { ops[cls].not = !ops[cls].not; renderAll(); };
+}
+function renderSteps(){
+  const it = ITEMS[sel], s = st[it.id];
+  const cur = !(s.predAI && s.predMe) ? 1 : !s.ai ? 2 : s.trust === null ? 3 : 4;
+  [1,2,3,4].forEach(n => $("st"+n).classList.toggle("on", n === cur));
+}
+function renderAll(){ renderThumbs(); renderPhoto(); renderPredict(); renderAI(); renderFinal(); renderRule(); renderSteps(); }
+
+/* ================== 이벤트 ================== */
+$("go").onclick = async () => {
+  const it = ITEMS[sel], s = st[it.id], go = $("go");
+  go.disabled = true; go.textContent = "AI가 사진을 보는 중…";
+  $("aiphoto").src = it.img; $("aiphoto").style.display = ""; $("aiempty").style.display = "none"; $("aiout").style.display = "none";
+  $("aiimg").classList.add("busy");
+  const [ai] = await Promise.all([runAI(it), new Promise(r=>setTimeout(r,1100))]);
+  $("aiimg").classList.remove("busy");
+  s.ai = ai; s.trust = null; renderAll();
+  if (window.innerWidth <= 900) $("aiimg").scrollIntoView({behavior:"smooth", block:"start"});
+};
+const dlg = $("detail");
+$("moreBtn").onclick = () => { renderPhoto(); dlg.showModal ? dlg.showModal() : dlg.setAttribute("open",""); };
+$("closeDetail").onclick = () => dlg.close ? dlg.close() : dlg.removeAttribute("open");
+dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
+$("reset").onclick = () => { ops = clone(START); ITEMS.forEach(it => st[it.id] = fresh()); sel = 0; renderAll(); };
+$("toggleMode").onclick = () => { mode = mode === "fixed" ? "auto" : "fixed"; if (mode === "auto" && modelState === "fail") modelState = "none";
+  ITEMS.forEach(it => { st[it.id].ai = null; st[it.id].trust = null; }); badge(); renderAll(); if (mode === "auto") ensureModel(); };
+
+badge(); renderAll();
+if (mode === "auto") ensureModel();
+</script>
+</body>
+</html>
