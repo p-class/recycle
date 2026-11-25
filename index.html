@@ -65,6 +65,7 @@ dialog#detail::backdrop{background:rgba(30,38,56,.55)}
 .tf.t{background:var(--green)} .tf.f{background:var(--red)}
 /* 예상 */
 .q{font-weight:900;font-size:15px;margin:4px 0 6px}
+.rguide{font-size:14px;font-weight:700;color:var(--sub);margin:0 0 8px} .rguide b{color:var(--ink)} .rguide b.and{color:var(--blue)} .rguide b.or{color:var(--or)} .rguide b.not{color:var(--red)}
 .q+.bins{margin-bottom:12px}
 .bins{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
 .bin{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:8px 6px;font-weight:700;font-size:14.5px;color:var(--ink)}
@@ -97,6 +98,15 @@ dialog#detail::backdrop{background:rgba(30,38,56,.55)}
 .res{border-radius:10px;padding:6px 14px;font-size:15px;color:#fff;white-space:nowrap}
 .eval{margin-top:10px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-weight:700;color:var(--sub);font-size:15px}
 .eval b.t{color:var(--green)} .eval b.f{color:var(--red)} .eval b.and{color:var(--blue)} .eval b.or{color:var(--or)} .eval b.not{color:var(--red)}
+.evals{margin-top:10px;display:grid;gap:6px}
+.evals .elabel{font-size:13px;font-weight:800;color:var(--sub)}
+.evals .eval{margin-top:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.evals .eval.cur{border:2px solid var(--ink)}
+.evals .eval.todo{font:inherit;font-weight:700;color:var(--sub);text-align:left;cursor:pointer;border-style:dashed;background:#FAF8F3}
+.evals .eval.todo .todotx{color:var(--gray)} .evals .eval.todo:hover{border-color:var(--ink)}
+.curtag{display:inline-block;background:var(--ink);color:#fff;border-radius:8px;padding:2px 9px;font-size:13.5px;margin-right:6px;vertical-align:1px}
+.evals .eval .mk{margin-left:auto;font-weight:900;font-size:18px} .evals .eval .mk.ok{color:var(--green)} .evals .eval .mk.no{color:var(--red)}
+.evals .eval .tag{font-size:11px;font-weight:900;background:var(--ink);color:#fff;border-radius:6px;padding:1px 6px}
 .ruleok{margin-top:10px;border-radius:10px;padding:9px 12px;font-weight:900}
 .ruleok.ok{background:#E7F5EC;color:var(--green)} .ruleok.no{background:#FDEDEB;color:var(--red)}
 .waiting{border:2px dashed var(--line);border-radius:14px;padding:22px;text-align:center;color:var(--muted);font-weight:700}
@@ -190,7 +200,7 @@ footer button{border:0;background:none;color:var(--muted);text-decoration:underl
       </section>
 
       <section class="card o4" id="ruleCard">
-        <div class="h"><span class="num" style="background:var(--or)">4</span>조건문으로 고치기 <small>· 연산자를 바꾸면 결과가 바로 바뀌어요</small></div>
+        <div class="h"><span class="num" style="background:var(--or)">4</span>조건문으로 고치기 <small>· AI가 알아본 재질이 맞다고 보고, 연산자를 바꾸면 결과가 달라질 수 있어요</small></div>
         <div id="ruleArea"></div>
       </section>
 
@@ -232,7 +242,7 @@ footer button{border:0;background:none;color:var(--muted);text-decoration:underl
   </dialog>
 
   <footer>
-    그림: 소스 묻은 피자 상자·캔·물병은 GPT로 만든 그림 · 신문지는 Claude가 만든 그림 · AI: 선생님이 티처블 머신으로 만든 모델<br>
+    그림: 피자 상자·신문지·캔·물병 모두 GPT로 만든 그림 · AI: 선생님이 티처블 머신으로 만든 모델<br>
     <button id="reset">처음부터 다시</button> · <button id="toggleMode">⚙ 선생님용: 비상 모드(예비 결과)</button>
   </footer>
 </div>
@@ -257,17 +267,17 @@ const AI_BIN = {"종이":"종이류", "캔":"캔류", "투명 페트":"투명 �
 
 // 재질별 조건문: 만일 <AI: 재질> (연산자) <조건> (이)라면 → then, 아니면 → else
 const RULES = {
-  "종이":     {cond:"오염되었다",  key:"dirty",   then:"일반쓰레기", else:"종이류"},
-  "캔":       {cond:"찌그러졌다",  key:"crushed", then:"캔류",       else:"분류 보류"},
-  "투명 페트": {cond:"라벨이 있다", key:"label",   then:"투명 페트",  else:"라벨 떼고 버리기"},
-  "플라스틱": {cond:"오염되었다",  key:"dirty",   then:"일반쓰레기", else:"플라스틱"}
+  "종이":     {cond:"오염되었다",  short:"오염", neg:"오염되지 않았다",   key:"dirty",   then:"일반쓰레기", else:"종이류"},
+  "캔":       {cond:"찌그러졌다",  short:"찌그러짐", neg:"찌그러지지 않았다", key:"crushed", then:"캔류",       else:"분류 보류"},
+  "투명 페트": {cond:"라벨이 있다", short:"라벨", neg:"라벨이 없다",       key:"label",   then:"투명 페트",  else:"라벨 떼고 투명 페트"},
+  "플라스틱": {cond:"오염되었다",  short:"오염", neg:"오염되지 않았다",   key:"dirty",   then:"일반쓰레기", else:"플라스틱"}
 };
 
 // 사진 6장 = 연산자 3쌍 (fixed = AI 연결이 안 될 때 쓰는 예비 결과)
 const ITEMS = [
-  {id:"pizza",  name:"소스 묻은 피자 상자", img:"images/pizza.jpg",        facts:{dirty:true,  crushed:false, label:false}, truth:"일반쓰레기",
+  {id:"pizza",  name:"소스 묻은 피자 상자", img:"images/pizza.jpg?v=2",        facts:{dirty:true,  crushed:false, label:false}, truth:"일반쓰레기",
    fixed:{"종이":100,"플라스틱":0,"캔":0,"투명 페트":0}, why:"AI는 종이를 정확히 알아봤지만, 소스가 묻은 건 놓쳤어요."},
-  {id:"paper",  name:"깨끗한 신문지",       img:"images/paper.jpg",        facts:{dirty:false, crushed:false, label:false}, truth:"종이류",
+  {id:"paper",  name:"깨끗한 신문지",       img:"images/paper.jpg?v=2",        facts:{dirty:false, crushed:false, label:false}, truth:"종이류",
    fixed:{"종이":99,"플라스틱":0,"캔":1,"투명 페트":0},  why:"깨끗한 종이는 종이류!"},
   {id:"canC",   name:"찌그러진 캔",         img:"images/can_crushed.jpg",  facts:{dirty:false, crushed:true,  label:false}, truth:"캔류",
    fixed:{"종이":0,"플라스틱":0,"캔":100,"투명 페트":0}, why:"찌그러져도 캔은 캔류!"},
@@ -275,8 +285,8 @@ const ITEMS = [
    fixed:{"종이":0,"플라스틱":1,"캔":99,"투명 페트":0},  why:"멀쩡한 캔도 캔이에요. 재질대로 캔류!"},
   {id:"bottle", name:"라벨 없는 물병",      img:"images/bottle.jpg",       facts:{dirty:false, crushed:false, label:false}, truth:"투명 페트",
    fixed:{"종이":0,"플라스틱":0,"캔":0,"투명 페트":100}, why:"라벨이 없는 투명 페트병은 투명 페트로!"},
-  {id:"bottleL",name:"라벨 붙은 물병",      img:"images/bottle_label.jpg", facts:{dirty:false, crushed:false, label:true},  truth:"라벨 떼고 버리기",
-   fixed:{"종이":0,"플라스틱":0,"캔":0,"투명 페트":100}, why:"AI는 투명 페트를 정확히 알아봤지만, 라벨이 붙은 건 놓쳤어요."}
+  {id:"bottleL",name:"라벨 붙은 물병",      img:"images/bottle_label.jpg", facts:{dirty:false, crushed:false, label:true},  truth:"라벨 떼고 투명 페트",
+   fixed:{"종이":0,"플라스틱":0,"캔":0,"투명 페트":100}, why:"AI는 투명 페트를 정확히 알아봤지만, 라벨이 붙은 건 놓쳤어요. 라벨을 떼야 투명 페트로 버릴 수 있어요!"}
 ];
 
 // 조건문 결과가 틀렸을 때 보여 줄 힌트 (정답 연산자는 말하지 않음)
@@ -286,12 +296,12 @@ const HINT = {
   canC:   "찌그러진 캔인데 캔류가 아니라고요? 조건을 다시 봐요.",
   can:    "캔인데 이 규칙을 통과하지 못했어요. 찌그러져야만 캔류일까요?",
   bottle: "라벨이 없는데 라벨을 떼라고요? 조건이 거꾸로 된 것 같아요.",
-  bottleL:"라벨이 붙어 있는데 그대로 투명 페트에? 조건이 거꾸로 된 것 같아요."
+  bottleL:"라벨이 붙어 있는데 바로 투명 페트에? 조건이 거꾸로 된 것 같아요."
 };
-const BINS = ["종이류","캔류","투명 페트","플라스틱","일반쓰레기","라벨 떼고 버리기"];
+const BINS = ["일반쓰레기","종이류","캔류","플라스틱","투명 페트","라벨 떼고 투명 페트"];
 const CLASSES = ["종이","캔","투명 페트","플라스틱"];
 const COLOR = {"종이":"var(--green)","캔":"var(--can)","투명 페트":"var(--pet)","플라스틱":"var(--plastic)",
-               "종이류":"var(--green)","캔류":"var(--can)","일반쓰레기":"var(--orange)","라벨 떼고 버리기":"var(--gray)","분류 보류":"#B7AE9F"};
+               "종이류":"var(--green)","캔류":"var(--can)","일반쓰레기":"var(--orange)","라벨 떼고 투명 페트":"#2E6FB0","분류 보류":"#B7AE9F"};
 const FACT_LABEL = {dirty:"오염되었다", crushed:"찌그러졌다", label:"라벨이 있다"};
 
 /* ================== 상태 ================== */
@@ -352,18 +362,22 @@ function badge(){
 function aiBinOf(s){ return s.ai ? AI_BIN[topClass(s.ai.probs)] : null; }
 function evaluate(it, s){
   if (!s.ai) return null;
-  const cls = topClass(s.ai.probs), R = RULES[cls], o = ops[cls];
+  return evalCls(it, topClass(s.ai.probs));
+}
+function evalCls(it, cls){
+  const R = RULES[cls], o = ops[cls];
   const a = true, raw = !!it.facts[R.key], b = o.not ? !raw : raw;
   const val = o.op === "그리고" ? (a && b) : (a || b);
   return {cls, R, o, a, raw, b, val, result: val ? R.then : R.else};
 }
+const ruleGoal = it => it.ruleTruth || it.truth;
 const tfv = v => `<b class="${v?"t":"f"}">${v?"참":"거짓"}</b>`;
 
 /* ================== 화면 ================== */
 function renderThumbs(){
   let okRule = 0, okAI = 0, seen = 0;
   $("thumbs").innerHTML = ITEMS.map((it,i)=>{
-    const s = st[it.id], e = evaluate(it, s); const mark = e ? (e.result === it.truth ? "ok" : "no") : "";
+    const s = st[it.id], e = evaluate(it, s); const mark = e ? (e.result === ruleGoal(it) ? "ok" : "no") : "";
     if (mark === "ok") okRule++;
     if (s.ai){ seen++; if (aiBinOf(s) === it.truth) okAI++; }
     return `<button class="thumb ${i===sel?"sel":""}" data-i="${i}"><span class="badge ${mark}">${mark==="ok"?"✓":mark==="no"?"✗":""}</span>
@@ -406,7 +420,7 @@ function renderFinal(){
   const ox = ok => `<span class="ox ${ok?"o":"x"}">${ok?"O":"X"}</span>`;
   let html = s.trust === null ? `<button class="go" id="showResult" style="background:var(--green)">🔎 결과 보기</button>` : "";
   if (s.trust !== null){
-    html += `<div class="answer"><span>✅ 올바른 분리배출</span><b style="color:${COLOR[it.truth]||"var(--gray)"}">${it.truth}</b></div>
+    html += `<div class="answer"><span>✅ 올바른 분리배출</span><b style="color:${COLOR[it.truth]||"var(--gray)"}">${it.truth}${it.note ? ` <small style="font-size:15px;color:var(--red)">(${it.note})</small>` : ""}</b></div>
       <div class="oxlist">
         <div class="oxrow"><span>🤖 AI의 답</span><b>${bin}</b>${ox(aiRight)}</div>
         <div class="oxrow"><span>🔮 내가 예상한 AI의 답</span><b>${s.predAI}</b>${ox(s.predAI===bin)}</div>
@@ -424,23 +438,32 @@ function renderRule(){
   const it = ITEMS[sel], s = st[it.id], e = evaluate(it, s);
   if (!e || s.trust === null){ $("ruleArea").innerHTML = `<div class="waiting">③ 결과를 보면<br>조건문이 여기 나타나요</div>`; return; }
   const {cls, R, o} = e, c = o.op === "그리고" ? "and" : "or";
+  const group = [it, ...ITEMS.filter(x => x !== it && topClass(st[x.id].ai ? st[x.id].ai.probs : x.fixed) === cls)];
+  const solved = x => !!(st[x.id].ai && st[x.id].trust !== null);
+  const done = group.filter(solved), left = group.length - done.length;
+  const wrong = done.find(x => evalCls(x, cls).result !== ruleGoal(x));
   $("ruleArea").innerHTML = `
-    <div class="q">어떤 규칙을 적용할까요?</div>
-    <div class="sentence">AI가 <b>${cls}</b>(이)라고 했고, <span class="${c}">${o.op}</span> ${R.cond}${o.not ? ` <span class="not">아니다</span>` : ""} → <b>${R.then}</b></div>
+    <div class="q"><span class="curtag">지금 사진: ${it.name}</span> 어떤 규칙을 적용할까요?</div>
+    <div class="rguide">연산자(<b class="and">그리고</b>·<b class="or">또는</b>·<b class="not">아니다</b>)를 바꿔서, 아래 사진들이 <b>모두 올바르게 분류되도록</b> 조건문을 고쳐 보세요.</div>
+    <div class="sentence">[AI 판단 재질: <b>${cls}</b>] <span class="${c}">${o.op}</span> [${o.not ? `<span class="not">${R.neg}</span>` : R.cond}] → <b>${R.then}</b></div>
     <div class="rule">
       <div class="rline"><span class="w">만일</span>
         <span class="inner ${c}">
-          <span class="hex">AI: ${cls}</span>
+          <span class="hex">AI 판단 재질: ${cls}</span>
           <span class="seg"><button data-op="그리고" class="${o.op==="그리고"?"on":""}">그리고</button><button data-op="또는" class="${o.op==="또는"?"on":""}">또는</button></span>
           <span class="notwrap ${o.not?"on":""}"><span class="hex">${R.cond}</span><button class="notbtn" id="notbtn">${o.not?"아니다 ✓":"+ 아니다"}</button></span>
         </span>
       </div>
-      <div class="rline branch ${e.val?"on":"off"}"><span class="w lead">(이)라면 →</span><span class="res" style="background:${COLOR[R.then]||"var(--gray)"}">${R.then}</span>${e.val?'<span class="now">◀ 지금 결과 (참)</span>':""}</div>
-      <div class="rline branch ${e.val?"off":"on"}"><span class="w lead">아니면 →</span><span class="res" style="background:${COLOR[R.else]||"var(--gray)"}">${R.else}</span>${e.val?"":'<span class="now">◀ 지금 결과 (거짓)</span>'}</div>
+      <div class="rline branch ${e.val?"on":"off"}"><span class="w lead">(이)라면 →</span><span class="res" style="background:${COLOR[R.then]||"var(--gray)"}">${R.then}</span>${e.val?`<span class="now">◀ 지금 사진(${it.name}) 결과 · 조건 참</span>`:""}</div>
+      <div class="rline branch ${e.val?"off":"on"}"><span class="w lead">아니면 →</span><span class="res" style="background:${COLOR[R.else]||"var(--gray)"}">${R.else}</span>${e.val?"":`<span class="now">◀ 지금 사진(${it.name}) 결과 · 조건 거짓</span>`}</div>
     </div>
-    <div class="eval">${it.name}: ${tfv(e.a)} <b class="${c}">${o.op}</b> ${o.not ? `(${tfv(e.raw)} <b class="not">아니다</b> = ${tfv(e.b)})` : tfv(e.b)} = ${tfv(e.val)} → <b style="color:var(--ink)">${e.result}</b></div>
-    <div class="ruleok ${e.result===it.truth?"ok":"no"}">${e.result===it.truth ? "✓ 조건문 결과가 올바른 분리배출과 같아요!" : `✗ ${HINT[it.id]}`}</div>
-    <p class="hint" style="margin:8px 0 0">이 조건문은 AI가 '${cls}'(으)로 확인한 사진 ${ITEMS.filter(x=>topClass(st[x.id].ai ? st[x.id].ai.probs : x.fixed)===cls).map(x=>x.name).join(", ")}에 함께 적용돼요.</p>`;
+    <div class="evals"><div class="elabel">이 조건문은 AI 판단 재질이 '${cls}'인 사진 ${group.length}장에 함께 적용돼요</div>${group.map(x=>{
+      if (!solved(x)) return `<button class="eval todo" data-i="${ITEMS.indexOf(x)}">${x.name}: <span class="todotx">아직 풀지 않았어요 · 눌러서 풀어 보기 ▶</span></button>`;
+      const ex = evalCls(x, cls), ok = ex.result === ruleGoal(x);
+      return `<div class="eval ${x===it?"cur":""}">${x===it?'<span class="tag">지금 사진</span>':""}<span class="calc">${x.name}: ${cls}(${tfv(ex.a)}) <b class="${c}">${o.op}</b> ${o.not ? `<b class="not">${R.short}X</b>` : `${R.short}O`}(${tfv(ex.b)}) = ${tfv(ex.val)} → <b style="color:var(--ink)">${ex.result}</b></span><span class="mk ${ok?"ok":"no"}">${ok?"✓":"✗"}</span></div>`;
+    }).join("")}</div>
+    <div class="ruleok ${wrong?"no":"ok"}">${wrong ? `✗ ${HINT[wrong.id]}` : left ? "✓ 지금 사진은 올바르게 분류됐어요! 다른 사진도 풀어서 함께 확인해 봐요." : (group.length > 1 ? `✓ ${group.length}장 모두 올바른 분리배출과 같아요!` : "✓ 조건문 결과가 올바른 분리배출과 같아요!")}</div>`;
+  $("ruleArea").querySelectorAll(".eval.todo").forEach(b => b.onclick = () => { sel = +b.dataset.i; renderAll(); window.scrollTo({top:0, behavior:"smooth"}); });
   $("ruleArea").querySelectorAll(".seg button").forEach(b => b.onclick = () => { ops[cls].op = b.dataset.op; renderAll(); });
   $("notbtn").onclick = () => { ops[cls].not = !ops[cls].not; renderAll(); };
 }
