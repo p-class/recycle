@@ -25,6 +25,24 @@ header h1 b{color:var(--blue)}
 .steps{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
 .steps span{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:700;color:var(--sub)}
 .steps span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.guideBtn{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:7px 14px;font:inherit;font-size:14px;font-weight:800;cursor:pointer}
+dialog#guide{border:0;border-radius:20px;padding:0;max-width:min(680px,94vw);width:100%;max-height:88vh;background:var(--card);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog#guide::backdrop{background:rgba(30,38,56,.55)}
+.gd{padding:22px 22px 18px;position:relative;font-size:15px;line-height:1.6}
+.gd h2{margin:0 0 4px;font-size:22px;padding-right:46px}
+.gd h3{margin:16px 0 6px;font-size:16px}
+.gd .lead{color:var(--sub);margin:0 0 10px}
+.gd .what{background:#EAF5EE;border-radius:12px;padding:10px 14px}
+.gd ol{margin:0;padding-left:0;list-style:none;display:grid;gap:8px}
+.gd ol li{background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 12px 9px 46px;position:relative}
+.gd ol li .n{position:absolute;left:10px;top:9px;width:26px;height:26px;border-radius:50%;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:14px}
+.gd table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;font-size:14px}
+.gd td{border-bottom:1px solid var(--line);padding:7px 10px;vertical-align:top}
+.gd td:first-child{font-weight:800;white-space:nowrap;background:#F6F2EA}
+.gd .m{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin-bottom:6px}
+.gd b.and{color:var(--blue)} .gd b.or{color:var(--or)} .gd b.not{color:var(--red)}
+.gd .tip{background:#FFF6E5;border-radius:12px;padding:10px 14px;margin-top:12px}
+.gd .x{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;border:0;background:var(--ink);color:#fff;font-size:16px;font-weight:900;cursor:pointer}
 .grid{display:grid;grid-template-columns:1.12fr .88fr;gap:18px;align-items:start}
 .card{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 3px 0 rgba(120,100,70,.12)}
 .card+.card{margin-top:14px}
@@ -177,6 +195,7 @@ footer button{border:0;background:none;color:var(--muted);text-decoration:underl
 <div class="wrap">
   <header>
     <h1>♻️ <b>AI</b> 분리수거 도우미</h1>
+    <button class="guideBtn" id="guideBtn">📖 사용 설명서</button>
     <div class="steps"><span id="st1">① 예상</span><span id="st2">② 실행</span><span id="st3">③ 비교</span><span id="st4">④ 고치기</span></div>
   </header>
 
@@ -229,6 +248,34 @@ footer button{border:0;background:none;color:var(--muted);text-decoration:underl
       </section>
     </div>
   </div>
+
+  <dialog id="guide">
+    <div class="gd">
+      <button class="x" id="closeGuide" aria-label="닫기">✕</button>
+      <h2>📖 AI 분리수거 도우미 사용 설명서</h2>
+      <p class="lead">혼자 공부할 때 이 순서대로 따라 해 보세요.</p>
+      <div class="what"><b>AI</b>는 사진을 보고 <b>무엇(재질)</b>인지 알아봐요. <b>어디에 버릴지</b>는 여러분이 만든 조건문(<b class="and">그리고</b>·<b class="or">또는</b>·<b class="not">아니다</b>)이 정해요.</div>
+      <h3>사용 순서</h3>
+      <ol>
+        <li><span class="n" style="background:var(--orange)">1</span><b>예상해요</b> · 사진을 고르고, 'AI는 어디로 분류할까?'와 '내 생각'을 하나씩 골라요. 🔍 버튼으로 사람이 본 것(오염·찌그러짐·라벨)도 확인할 수 있어요.</li>
+        <li><span class="n" style="background:var(--teal)">2</span><b>AI에게 보여 줘요</b> · AI 창에 AI가 본 재질과 확률(%)이 나와요. AI는 재질만 알아봐요.</li>
+        <li><span class="n" style="background:var(--green)">3</span><b>결과를 비교해요</b> · '결과 보기'를 누르면 올바른 분리배출과 O/X가 나와요. AI도 틀릴 때가 있어요!</li>
+        <li><span class="n" style="background:var(--or)">4</span><b>조건문으로 고쳐요</b> · 그리고/또는을 바꾸거나 '+ 아니다'를 눌러, 같은 재질 사진 2장이 <b>모두 ✓</b>가 되게 만들어요.</li>
+      </ol>
+      <h3>화면 읽는 법</h3>
+      <table>
+        <tr><td>참 / 거짓</td><td>조건을 계산한 값이에요. 참이면 '(이)라면' 줄, 거짓이면 '아니면' 줄로 가요.</td></tr>
+        <tr><td>오염O / 오염X</td><td>O는 '오염되었다', X는 '아니다'를 붙인 '오염되지 않았다'예요. (찌그러짐·라벨도 같아요)</td></tr>
+        <tr><td>O / X</td><td>③에서 AI의 답, 내 예상, 내 답이 맞았는지예요.</td></tr>
+        <tr><td>✓ / ✗</td><td>④에서 조건문 결과가 올바른 분리배출과 같은지예요.</td></tr>
+      </table>
+      <h3>혼자 해 보기 미션</h3>
+      <div class="m"><b>미션 1 · 피자 상자 + 신문지</b> — 그리고와 또는 중 2장 모두 ✓가 되는 건?</div>
+      <div class="m"><b>미션 2 · 멀쩡한 캔 + 찌그러진 캔</b> — 캔은 찌그러져야만 캔류일까요?</div>
+      <div class="m"><b>미션 3 · 라벨 없는 물병 + 라벨 붙은 물병</b> — 연산자만으로 안 되면, 마지막 버튼은? (힌트: + 아니다)</div>
+      <div class="tip">💡 같은 조건이라도 <b>연산자에 따라 버리는 곳이 달라져요.</b> AI도, 우리가 만든 규칙도 틀릴 수 있으니 결과를 꼭 확인해요.</div>
+    </div>
+  </dialog>
 
   <dialog id="detail">
     <div class="dlg">
@@ -488,6 +535,10 @@ $("go").onclick = async () => {
 const dlg = $("detail");
 $("moreBtn").onclick = () => { renderPhoto(); dlg.showModal ? dlg.showModal() : dlg.setAttribute("open",""); };
 $("closeDetail").onclick = () => dlg.close ? dlg.close() : dlg.removeAttribute("open");
+const gdlg = $("guide");
+$("guideBtn").onclick = () => gdlg.showModal ? gdlg.showModal() : gdlg.setAttribute("open", "");
+$("closeGuide").onclick = () => gdlg.close ? gdlg.close() : gdlg.removeAttribute("open");
+gdlg.addEventListener("click", e => { if (e.target === gdlg) gdlg.close(); });
 dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
 $("reset").onclick = () => { ops = clone(START); ITEMS.forEach(it => st[it.id] = fresh()); sel = 0; renderAll(); };
 $("toggleMode").onclick = () => { mode = mode === "fixed" ? "auto" : "fixed"; if (mode === "auto" && modelState === "fail") modelState = "none";
